@@ -83,21 +83,12 @@ def datasplit(label, feat):
     df['ABT_FAMILY'] = df['FAMILY'].astype(bool)
     df = clean_tweets(df,False, remove_duplicates=False)
     
-    
-    
-
-    
-
-
     df["AUTHOR_OR"] = df["AUTHOR_COVID"] + df["AUTHOR_SYMPTOMS"] > 0
     df["FAMILY_OR"] = df["FAMILY_COVID"] + df["FAMILY_SYMPTOMS"] > 0
 
     df["AUTHOR_OR"] = df["AUTHOR_OR"].replace(0, False).replace(1,True)
     df["FAMILY_OR"] = df["FAMILY_OR"].replace(0, False).replace(1,True)
 
-   
-    
-    
     label = label
     text =feat
     
@@ -108,9 +99,6 @@ def datasplit(label, feat):
 
     le = preprocessing.LabelEncoder()
     df[label]=le.fit_transform(df[label])
-
-
-
 
     train_text, temp_text, train_labels, temp_labels = train_test_split(df[text], df[label],test_size=0.3, stratify=df[label]) 
     
@@ -130,13 +118,11 @@ def datasplit(label, feat):
 
 def data_man(label, feat):
     
-    df_train= read_pickle1('/home/adhiman/SAR-z/Eda/processed/new/train-val-test/train.pkl')
-    df_val= read_pickle1('/home/adhiman/SAR-z/Eda/processed/new/train-val-test/val.pkl')
-    df_test= read_pickle1('/home/adhiman/SAR-z/Eda/processed/new/train-val-test/test.pkl')
+    df_train= read_pickle1('/train-val-test/train.pkl')
+    df_val= read_pickle1('/train-val-test/val.pkl')
+    df_test= read_pickle1('/train-val-test/test.pkl')
     
-    '''df_train[label] = list(map(lambda ele: ele == "True", df_train[label].tolist()))
-    df_val[label] = list(map(lambda ele: ele == "True", df_val[label].tolist()))
-    df_test[label] = list(map(lambda ele: ele == "True", df_test[label].tolist()))'''
+
     df_train[label] = df_train[label].astype(bool)
     df_test[label] = df_test[label].astype(bool)
     df_val[label] = df_val[label].astype(bool)
@@ -210,9 +196,6 @@ def get_data(label, split_type, df, train_text, train_labels, val_text, val_labe
         pad_to_max_length=True,
         truncation=True
     )
-
-
-
     ## convert lists to tensors
 
     train_seq = torch.tensor(tokens_train['input_ids'])
@@ -231,14 +214,11 @@ def get_data(label, split_type, df, train_text, train_labels, val_text, val_labe
     test_y = torch.tensor(test_labels.tolist())
     #test_y = test_y.unsqueeze(1)
 
-
-
     # wrap tensors
     train_data = TensorDataset(train_seq, train_mask, train_y)
 
     # sampler for sampling the data during training
     train_sampler = RandomSampler(train_data)
-
 
     #train_sampler = WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
@@ -266,10 +246,6 @@ def check_gpu_usage():
         print('Memory Usage:')
         print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
         print('Cached:   ', round(torch.cuda.memory_reserved(0)/1024**3,1), 'GB')
-
-
-    
-    
 
 class BERT_Arch(nn.Module):
     def __init__(self, bert):
@@ -310,9 +286,6 @@ class BERT_Arch(nn.Module):
         x = self.fc2(x)
        
         return x
-  
-
-
     
 def train(model, optimizer, train_dataloader, cross_entropy):
     model.train()
@@ -353,8 +326,6 @@ def train(model, optimizer, train_dataloader, cross_entropy):
         # compute the loss between actual and predicted values
         loss = cross_entropy(preds, labels)
 
-        
-        
         # add on to the total loss
         total_loss = total_loss + loss.item()
 
@@ -383,8 +354,6 @@ def train(model, optimizer, train_dataloader, cross_entropy):
     
     #returns the loss and predictions
     return avg_loss, total_preds
-
-
 
 # function for evaluating the model
 def evaluate(model, val_dataloader, cross_entropy):
@@ -444,13 +413,7 @@ def evaluate(model, val_dataloader, cross_entropy):
     #print (total_preds)
     return avg_loss, total_preds
 
-
-
-
 def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, save_path):
-    
-    
-
 
     #########################################################
 
@@ -471,17 +434,12 @@ def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, sa
     print ("=========================Total layers")
     print (len(list(bert.parameters())))
     
-
-        
     for name, param in list(bert.named_parameters())[:enc_num]:
         param.requires_grad = False
         
     for name, param in bert.named_parameters():
         if param.requires_grad == True:
             print('I am not frozen: {}'.format(name))
-        
-
-    
     
     #batch_size
     # pass the pre-trained BERT to our define architecture
@@ -489,19 +447,12 @@ def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, sa
 
     model = nn.DataParallel(model)
 
-
     # push the model to GPU
     model = model.to(device)
-
-
-   
-
 
     # define the optimizer
     optimizer = AdamW(model.parameters(),
                       lr = my_lr, eps= 1e-08)          # learning rate
-
-   
 
 
     scheduler = ReduceLROnPlateau(optimizer, 'min', patience= 4, factor=0.01, verbose=True)
@@ -519,15 +470,8 @@ def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, sa
        
     pos_wt = pos_wt.to(device)
 
-   
     cross_entropy  = nn.BCEWithLogitsLoss(pos_weight=pos_wt) 
     
-    # number of training epochs
-
-    #dice loss
-    #criterion = SelfAdjDiceLoss()
-
-
 
     # set initial loss to infinite
     best_valid_loss = float('inf')
@@ -535,11 +479,6 @@ def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, sa
     # empty lists to store training and validation loss of each epoch
     train_losses=[]
     valid_losses=[]
-
-
-
-
-
 
     es=0
     #for each epoch
@@ -549,8 +488,6 @@ def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, sa
 
         #train model
         train_loss, _ = train(model, optimizer, train_dataloader, cross_entropy)
-
-
 
         #evaluate model
         valid_loss, _ = evaluate(model, val_dataloader, cross_entropy)
@@ -577,8 +514,6 @@ def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, sa
                 print("Early stopping with best_valid_loss: ", best_valid_loss, "and valid_loss for this epoch: ", valid_loss, "...")
                 break
 
-
-
         #check_gpu_usage()
 
     return model, train_losses, valid_losses, epoch, optimizer.param_groups[0]['lr'], 
@@ -594,8 +529,6 @@ def test(model, test_seq, test_mask, test_y, train_losses, valid_losses, label, 
     test_seq = test_seq.to(device)
     test_mask = test_mask.to(device)
     #test_y = test_y.to(device)
-
-
 
     # get predictions for test data
     with torch.no_grad():
@@ -637,8 +570,6 @@ def test(model, test_seq, test_mask, test_y, train_losses, valid_losses, label, 
         f1 = f1_score(test_y, pred_class, average ='macro')
         return pred_sigmoid,  torch.from_numpy(preds), val_th, f1
         
-    
-
 def data_fold(X, Y, label, feat,train_index, test_index, sk):
     
     if sk==1:
