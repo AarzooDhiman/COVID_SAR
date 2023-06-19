@@ -365,11 +365,11 @@ def main_prob():
                     df_u = test_df[test_df['USER_ID']==user]
                     
                     if label=='FAMILY_OR':
-                        df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/uk_user_scores/'+str(user)+'/fam_ct_score4.pkl')
+                        df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/uk_user_scores/'+str(user)+'/fam_score.pkl')
                     if label=='AUTHOR_OR':
-                         df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/uk_user_scores/'+str(user)+'/auth_ct_score4.pkl')
+                         df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/uk_user_scores/'+str(user)+'/author_score.pkl')
                     if label=='ABT_FAMILY':
-                         df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/uk_user_scores/'+str(user)+'/abtfam_ct_score4.pkl')
+                         df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/uk_user_scores/'+str(user)+'/abtfam_score.pkl')
                             
 
 if __name__ == "__main__":
