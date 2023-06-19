@@ -58,15 +58,6 @@ emoji_pattern = re.compile("["
                        u"\u3030"
                        "]+", flags=re.UNICODE)
 
-'''raw_tweets = []
-for h in glob.glob('/disks/sda/adhiman/SAR-z/raw_tweets/monthly_files/*.pkl'):
-    raw_tweets = raw_tweets + read_pickle1(h)['TWEET_ID'].tolist()
-
-raw_tweets = list(set(raw_tweets))
-
-print ("RAW TWEETS")
-print (len(raw_tweets))
-'''
 
 
 def find_best_pair(auth_df, fam_df, days):
@@ -75,160 +66,65 @@ def find_best_pair(auth_df, fam_df, days):
     auth_df1= auth_df1.rename(columns={'TWEET_ID':'AUTH_TWEET_ID', 'MONTH_ID':'AUTH_MONTH_ID', 'TIMESTAMP':'AUTH_TIMESTAMP' })
     fam_df1 = fam_df[['TWEET_ID', 'USER_ID', 'FAMILY_SCORE' , 'MONTH_ID', 'TIMESTAMP', 'PROB_F']]
     fam_df1= fam_df1.rename(columns={'TWEET_ID':'FAM_TWEET_ID', 'MONTH_ID':'FAM_MONTH_ID', 'TIMESTAMP':'FAM_TIMESTAMP' })
-    
-    #auth_df1['PROB_A'] =  0.5 + 0.5*((auth_df1['AUTHOR_SCORE']- tau_a)/(max_a - tau_a))
-    #fam_df1['PROB_F'] =  0.5 + 0.5*((fam_df1['FAMILY_SCORE']- tau_f)/(max_f - tau_f))
-    
 
-    
     auth_df1 = auth_df1.sort_values(['AUTHOR_SCORE'], ascending=False) ##finding maximum
     fam_df1 = fam_df1.sort_values(['FAMILY_SCORE'], ascending=False) ##finding maximum
     
-    #auth_df1.to_csv('/disks/sdb/adhiman/SAR-z/monthly_classified_user_days/test/33192983_dfa_top10_og.csv')
-    #fam_df1.to_csv('/disks/sdb/adhiman/SAR-z/monthly_classified_user_days/test/33192983_dff_top10_og.csv') 
-
-    
-    #auth_df1 = auth_df1.head(5)
-    #fam_df1 = fam_df1.head(5)
-    
-    '''print (auth_df1.columns)
-    print (auth_df1.shape)
-    print (fam_df1.columns)
-    print (fam_df1.shape)'''
-    
     df_all = auth_df1.merge(fam_df1, how='outer')
     
-    #df_all.to_csv('/disks/sdb/adhiman/SAR-z/monthly_classified_user_days/test/33192983_top10_og.csv')
-    
-    
-        
-    #df_all = df_all[df_all['AUTH_TWEET_ID']!=df_all['FAM_TWEET_ID']]
-    #df_all = df_all.sort_values(['AUTHOR_SCORE', 'FAMILY_SCORE'], ascending=False).reset_index() ##finding maximum
-    
-    #print ("df_cross join")
-    #print (df_all)
-    #print (df_all.shape)
     df_all['delta'] = (df_all['FAM_TIMESTAMP'] - df_all['AUTH_TIMESTAMP']).dt.days
     df_all['PROB'] = df_all['PROB_A']*df_all['PROB_F']
     df_all = df_all.sort_values(['PROB'], ascending=False).reset_index()
-    #print (df_all['delta'].values[0])
-    
-    
-    #print (df_all[['AUTH_TIMESTAMP','FAM_TIMESTAMP', 'delta']])
 
-    #print ("************************")
-    #print (df_all.head())
     df_all1 = df_all[(df_all['delta']>=(0-days)) & (df_all['delta']<=days) & (df_all['delta']!=0)]
-    #df_all1.to_csv('/disks/sdb/adhiman/SAR-z/monthly_classified_user_days/test/33192983_top10_filt_og.csv')
-    
-     ##finding maximum
-    '''if df_all1.shape[0]!=0:
-        print ("-----------------3")
-        print (df_all1.head())'''
-    
-    #print (df_all[['AUTH_TIMESTAMP','FAM_TIMESTAMP','AUTHOR_SCORE','FAMILY_SCORE', 'delta']])
-    
-    #time_interval={}
+
     
     if df_all1.shape[0]>0:
         final_delta =df_all1['delta'].values[0]
         neg_values = df_all1[df_all1['delta']<0].shape[0]
         pos_values = df_all1[df_all1['delta']>0].shape[0]
         
-        
-        #print ("delta")
-        #print (df_all1['delta'].values[0])
-        '''if neg_values>0 and pos_values>0:
-            return (0, -1,-1, {}, 0 )
-        else:
-            final_auth_mnth = df_all1['AUTH_MONTH_ID'].values[0]
-            final_fam_mnth = df_all1['FAM_MONTH_ID'].values[0]
-            
-            time_interval[final_auth_mnth] = final_delta
-            return (final_delta, final_auth_mnth, final_fam_mnth, time_interval, df_all1['PROB'].values[0] )'''
         final_auth_mnth = df_all1['AUTH_MONTH_ID'].values[0]
         final_fam_mnth = df_all1['FAM_MONTH_ID'].values[0]
 
-        #time_interval[final_auth_mnth] = final_delta
         return (final_delta, final_auth_mnth, final_fam_mnth, df_all1['PROB_A'].values[0] , df_all1['PROB_F'].values[0] )
     
     elif df_all1.shape[0]==0:
         if df_all.shape[0]>0:
-            '''if (df_all['delta'].values[0] >14) and (df_all['delta'].values[0]<30):
-                print (df_all['delta'].values[0])'''
-            #time_interval[df_all['AUTH_MONTH_ID'].values[0]] = df_all['delta'].values[0]
             return (df_all['delta'].values[0], df_all['AUTH_MONTH_ID'].values[0], df_all['FAM_MONTH_ID'].values[0], df_all['PROB_A'].values[0] , df_all['PROB_F'].values[0] )
         else:
             return "nothing"
         
-        '''elif df_all.shape[0]==0:
-            print (df_all)
-            return (df_all['delta'].values[0], auth_df1['AUTH_MONTH_ID'].values[0],fam_df1['FAM_MONTH_ID'].values[0] )'''
-            
-        '''p_a = 0.5 + 0.5*((auth_df1['AUTHOR_SCORE'].values[0]- tau_a)/(max_a - tau_a))
-            p_f = 0.5 + 0.5*((fam_df1['FAMILY_SCORE'].values[0]- tau_f)/(max_f - tau_f))
-            
-            #print ("data not found")
-            #print (auth_df1['AUTHOR_SCORE'])
-            #print (fam_df1['FAMILY_SCORE'])
-            #print ( p_a, p_f)
-            
-            if p_a>p_f:
-                return (10000, auth_df1['AUTH_MONTH_ID'].values[0], -1 )
-            elif p_f>p_a:
-                return (10000, -1, fam_df1['FAM_MONTH_ID'].values[0] )
-            else:
-                return (0, -1,-1 )'''
-            
-            
-
 def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, user):
     
     author_positive = author_positive_df.copy()
     family_positive = family_positive_df.copy()
-    #family_any = family_any_df.copy()
-    
-    
+
     classification = {}
     serial_interval = {}
     
     #print (author_positive)
     #print (family_positive)
     
-    #start_of_timeline = datetime.datetime(2020, 1, 1, tzinfo=pytz.UTC)
+    #start_of_timeline = datetime.datetime(2020, 1, 1, tzinfo=pytz.UTC) ##weekly values
     
     if author_positive.shape[0]>0:
-        #print (author_positive)
-        
+
         
         author_positive.TIMESTAMP = pd.to_datetime(author_positive.TIMESTAMP, utc=True)
-       
-        #print (author_positive.TIMESTAMP)
-        
-        #print ("auth shape")
-        #print (author_positive)
-        
-        
-        
+
         author_positive["MONTH_ID"] = author_positive.TIMESTAMP.dt.month + (author_positive.TIMESTAMP.dt.year-2020)*12 ##mnth
         
         '''author_positive['delta'] = author_positive.TIMESTAMP - start_of_timeline ##week
-        author_positive['week'] = (author_positive['delta'].dt.days // 7) + 1
-        author_positive['MONTH_ID'] = author_positive['week']'''
-        #print ("auth shape")
-        #print (author_positive)
+        author_positive['week'] = (author_positive['delta'].dt.days // 7) + 1 ##week
+        author_positive['MONTH_ID'] = author_positive['week']''' ##week
+
         
-        #author_positive = author_positive.reset_index().iloc[0] #finding maximum ###update
-        #auth_month_id = int(author_positive.MONTH_ID) ###update
         author_positive= author_positive.rename(columns={'log':'AUTHOR_SCORE'})
         
         author_positive = author_positive.sort_values("AUTHOR_SCORE", ascending=False).reset_index() ##finding maximum
         
         author_positive['PROB_A'] =  0.5 + 0.5*((author_positive['AUTHOR_SCORE']- tau_a)/(max_a - tau_a))
-        '''if author_positive.shape[0]>10:
-            author_positive = pd.DataFrame()'''
-            
-        #author_positive = author_positive[:21]
 
         
     if family_positive.shape[0]>0:
@@ -245,47 +141,26 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
         family_positive['MONTH_ID'] = family_positive['week']'''
         
         
-        #print (family_positive)
-        #family_positive= family_positive.rename(columns={0:'FAMILY_SCORE'})
-        #family_positive= family_positive.rename(columns={'T_PRED':'FAMILY_SCORE'})
+        
         family_positive= family_positive.rename(columns={'log':'FAMILY_SCORE'})
         
-        #print (family_positive)
-        
-        #family_positive = family_positive.sort_values("FAMILY_SCORE", ascending=False).reset_index().iloc[0] ##finding maximum
+       
         family_positive = family_positive.sort_values("FAMILY_SCORE", ascending=False).reset_index()
         
         family_positive['PROB_F'] =  0.5 + 0.5*((family_positive['FAMILY_SCORE']- tau_f)/(max_f - tau_f))
-        
-        #fam_month_id  = int(family_positive.MONTH_ID) ####update
-        #if fam_month_id ==10:
-            #print ("---------------family")
-            #print (family_positive.TWEET_TEXT)
-            
-            
-        '''if family_positive.shape[0]>10:
-            family_positive = pd.DataFrame()'''
-        #family_positive = family_positive[:21]
-            
+
     
     wd={}
-    #print (author_positive)
-    #print (family_positive)
-    
+
     class_p=0
     
     class_p={}
     
-    month_ids = {'auth_month':[], 'fam_month':[]}
-    
-    #if (author_positive.shape[0]<=5) and  (family_positive.shape[0]<=5):
-    
+    month_ids = {'auth_month':[], 'fam_month':[]}    
     
     if author_positive.shape[0]>0 and family_positive.shape[0]==0:
 
         auth_month_id = int(author_positive.iloc[0]['MONTH_ID'])
-        #print ("author")
-        #print (author_positive['TWEET_TEXT'].values[0])
 
         classification[auth_month_id]=str(10)
         wd[auth_month_id] = auth_cnf
@@ -295,9 +170,6 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
 
     if author_positive.shape[0]==0 and family_positive.shape[0]>0:
         fam_month_id = int(family_positive.iloc[0]['MONTH_ID'])
-
-        #print ("family")
-        #print (family_positive['TWEET_TEXT'].values[0])
 
         classification[fam_month_id]=str(20)
         wd[fam_month_id] = fam_cnf
@@ -310,16 +182,12 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
         days = 14
         delta, auth_month_id, fam_month_id, p_a, p_f = find_best_pair(author_positive, family_positive, days)
         
-        #print (type(delta))
-        #print (delta)
-
+      
         month_ids['auth_month'] = author_positive['MONTH_ID'].tolist()
         month_ids['fam_month'] = family_positive['MONTH_ID'].tolist()
 
 
-        #delta = pd.Timedelta(family_positive.TIMESTAMP-author_positive.TIMESTAMP).days
-
-
+   
 
         if (delta>=1) and (delta<=days):
             #print ('12')
@@ -338,16 +206,7 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
             p_val = (p_a+p_f)/2
             class_p[fam_month_id] = p_val
 
-        elif delta!=0:                                           #####correct this 
-
-            #print ('1020')
-
-            '''if '10' in usr_cls:
-                classification[auth_month_id] = str(10)
-            if '20' in usr_cls:
-                classification[fam_month_id] = str(20)'''
-            #print (auth_month_id)
-            #print (fam_month_id)
+        elif delta!=0:                                          
             classification[auth_month_id] = str(10)
             wd[auth_month_id] = auth_cnf
             class_p[auth_month_id] = p_a
@@ -356,19 +215,9 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
             wd[fam_month_id] = fam_cnf
             class_p[fam_month_id] = p_a
 
-            '''classification[fam_month_id] = str(21020)
-            classification[auth_month_id] = str(11020)'''
-
-            #serial_interval[auth_month_id] = delta
-
-
         else:
             serial_interval = {}
             pass
-        
-
-
-
 
     json_cls = {str(k):v for k,v in classification.items() if k>=0}
     classification = {k:v for k,v in classification.items() if k>=0}
@@ -380,9 +229,7 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
             json.dump(json_cls, fp) 
         with open(f"{path}/months.json", 'w') as fm:
             json.dump(month_ids, fm)
-        
-            
-            
+
     return classification, wd_sc, serial_interval, class_p
             
 
