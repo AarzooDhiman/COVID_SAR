@@ -224,18 +224,13 @@ def clean_tweets(df_in,covid=False, remove_duplicates=True):
 
 
 if __name__ == "__main__":
-    df1 = read_pickle1('/home/adhiman/SAR-z/to_label_data/code/final_labels/labeled_SET1.pkl')
-    df2 = read_pickle1('/disks/sdb/adhiman/SAR-z/labelbox itr2/with_consensus/itr2.pkl')
-    df2 = df2[list(df1.columns.values)]
-    df2 = df2.replace('NO', 0)
-    df2 = df2.replace('YES', 1)
-    df = pd.concat([df1,df2])
-
+    df = read_pickle1('/labeled_tweet.pkl')
+    df = df.replace('NO', 0)
+    df = df.replace('YES', 1)
 
     df = clean_tweets(df, remove_duplicates=True)
     #print (df.head())
-    df.to_pickle('/home/adhiman/SAR-z/labeled data/itr1_2.pkl')
-    df.to_csv('/home/adhiman/SAR-z/labeled data/itr1_2.csv', index = False)
+    df.to_pickle('/labeled_tweet_processed.pkl')
 
 
 
