@@ -563,9 +563,6 @@ def elad_sar2(summ, w_df):
         mnth_sum = summary2.merge(m_u, left_on='user', right_on =m_u.index )
 
         
-            
-        
-        
         T_R= mnth_sum['T'].replace('12', 1.0).replace('21', 1.0).replace('10', 0.0).replace('20',0.0)
         
         T_R = T_R.fillna(0.0)
@@ -573,7 +570,6 @@ def elad_sar2(summ, w_df):
        
         T_R = T_R.to_numpy()
        
-        
         P_R = np.array([p_x]*mnth_sum.shape[0])
         
         #P_R = np.array([0.87065]*mnth_sum.shape[0])
@@ -585,16 +581,10 @@ def elad_sar2(summ, w_df):
         
         psar[month_ID] = p_right/p_left
         
-            
-        
-       
     Elad_SAR_df = pd.DataFrame.from_dict(psar, orient="index").rename({0: "new_Elad_SAR"}, axis=1)
     
     return Elad_SAR_df
 
-        
-
-    
 def pred_sar(summ,elad, gold_df, si, total_users):
     
     summary = summ.copy()
@@ -779,8 +769,6 @@ def plot_data(tab, all_probs,  path, ath,fth,v, r):
     return table
     
 
-
-
 def check_overlap(ukusers):
     fin_u =[]
     count =0
@@ -801,9 +789,6 @@ def check_overlap(ukusers):
     user_name.close()
     return fin_u
             
-
-
-
     
 def get_users4():
 
@@ -817,8 +802,6 @@ def get_users4():
     print(len(user_ids))
     return user_ids
     
-
-        
         
 def basic_run( inpath, outpath,auth, fmth, v):
     print ("===================================================================================================================================================================")
@@ -830,7 +813,6 @@ def basic_run( inpath, outpath,auth, fmth, v):
     user_ids= []
     
     user_ids = get_users4() 
-    
     
     
     for u in user_ids:
@@ -851,7 +833,6 @@ def basic_run( inpath, outpath,auth, fmth, v):
     classes = pool.starmap(author_fam_positive, zip(user_ids, [path]*len(user_ids), [out_path]*len(user_ids), [auth]*len(user_ids), [fmth]*len(user_ids)))
     pool.close()
     
-   
     
     summ, elad_w, si, all_probs = calSAR(classes)
     
@@ -871,13 +852,6 @@ def basic_run( inpath, outpath,auth, fmth, v):
     pred_res['Month'] =pred_res['Month'].astype('str')
    
     return pred_res, all_probs
-    
-
-    
-
-    
-    
-    
 
     
 def main():
@@ -912,9 +886,6 @@ def main():
     else:
         print ('invalid argument')
         return
-    
-    
-    
     
 if __name__ == '__main__':
     
