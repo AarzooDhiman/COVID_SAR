@@ -1,28 +1,30 @@
 # SAR_data
 
 ## Labeled data
-The classifier has been trained on the labeled data given in file [labeled_tweet_id2](labeled_tweet_id2.txt)
-The file contains only the Tweet IDs. The tweets can be retrieved using these Tweet IDs. The features used in our work are TIMESTAMP, TWEET_ID, USER_ID, GEO, TWEET_TEXT
+
+The classifier has been trained on a dataset of [labeled_tweet_id2](labeled_tweet_id2.txt), which is provided in the file labeled_tweet_id2.txt. This file contains only the Tweet IDs, which can be used to retrieve the corresponding tweets. The dataset includes various features such as the timestamp, tweet ID, user ID, geolocation, and tweet text, which were used to train the classifier.
 
 ## Text Preprocessing
-[Preprocess](preprocess.py) is used for pre-processing the tweet text. This preprocessed text is used for the classification. 
+
+The [Preprocess.py](preprocess.py) script is utilized for preprocessing the tweet text before it is used for classification. The preprocessed text is then fed into the classification model as input.
 
 `python preprocess.py`
 
 ## Classification
-For classification we use Covid-Twitter-BERT, BERT large uncased model fine tuned on 160M tweets collected between January 12 and April 16, 2020. We further fine-tuned the model on our labeled tweets data. We save the best performing model from this code. 
 
-To run [ct-bert2-crossval.py](ct-bert2-crossval.py) use the shell file [run_ct_bert.sh](run_ct_bert.sh)
+We utilized the Covid-Twitter-BERT (CT-BERT) model for classification, which is a variant of the BERT large uncased model fine-tuned on a dataset of 160 million tweets collected between January 12 and April 16, 2020. We further fine-tuned the CT-BERT model on our labeled tweet dataset and saved the best performing model from our training process.
+
+To run the [ct-bert2-crossval.py](ct-bert2-crossval.py) script, please use the [run_ct_bert.sh](run_ct_bert.sh) shell file.
 
 `sh ./run_ct_bert.sh`
 
 ## User Tweets Classification 
-The trained model is further run on tweets of all the users to generate the prediction scores for all the tweets of all the users. 
+After being trained on the labeled tweet dataset, the classification model is then utilized to generate prediction scores for all the tweets of all users. This involves running the model on the entire tweet corpus to classify each tweet based on its content and generate a corresponding prediction score.
 
 `python ctbertppln.py`
 
 ## SAR Calculation 
-Final SAR estimation is done in code file [user_class.py](user_class.py)
-To run this SAR estimation use the shell file [run_user_class.sh](run_user_class.sh)
+
+The final estimation of SAR (Secondary Attack Rate) is performed in the [user_class.py](user_class.py) code file. To run the SAR estimation process, please use the provided shell file [run_user_class.sh](run_user_class.sh).
 
 `sh ./run_user_class.sh`
