@@ -24,12 +24,7 @@ import re
 from scipy import stats
 import pytz
 
-tau_a = -0.63
-tau_f = 0.028
-max_a = 2.662
-max_f = 2.610
-min_a = -6.162
-min_f = -6.575
+
 
 def read_pickle1(pth):
     with open(pth, "rb") as fh:
