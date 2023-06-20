@@ -57,7 +57,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sadice import SelfAdjDiceLoss
 
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler, WeightedRandomSampler
-import eda_supplement
+
 
 
 print (torch.__version__)
@@ -79,7 +79,7 @@ def read_pickle1(pth):
 def datasplit(label, feat):
     
     
-    df = read_pickle1('labeled_tweet.pkl')
+    df = pd.read_csv('../data/labeled_data/labels-949-nontrunc(old).csv')
     df['ABT_FAMILY'] = df['FAMILY'].astype(bool)
     df = clean_tweets(df,False, remove_duplicates=False)
     
@@ -418,7 +418,7 @@ def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, sa
     #########################################################
 
 
-    epochs =150
+    epochs =5
     my_lr = 2e-5
     enc_num = 0-enc_num
 
@@ -584,8 +584,8 @@ def data_fold(X, Y, label, feat,train_index, test_index, sk):
 
 def main2(label,enc_num, run_num, batch_size, feat):
     
-    out_file = open("/disks/sdb/adhiman/SAR-z/ct_bert/split_data/ct_bert/thresholds.txt", "a")
-    df0 = read_pickle1('/disks/sdb/adhiman/SAR-z/labelbox itr3/with consensus/data_for_validation/itr123.pkl')
+    out_file = open("performance/thresholds.txt", "a")
+    df0 = pd.read_csv('../data/labeled_data/labels-949-nontrunc(old).csv')
     df0['ABT_FAMILY'] = df0['FAMILY'].astype(bool)
     out_file.write("========================================================================\n")
     out_file.write(label+'\n')
@@ -617,7 +617,7 @@ def main2(label,enc_num, run_num, batch_size, feat):
         for train_index2, test_index2 in skf2.split(temp_text, temp_labels): 
             
             print (test_index[0])
-            if os.path.exists('/disks/sdb/adhiman/SAR-z/ct_bert/split_data/ct_bert/abt_family_val/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv'):
+            if os.path.exists('performance/abt_fam_val/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv'):
                 print ("PATH EXISTS")
                 continue
                 
@@ -636,11 +636,11 @@ def main2(label,enc_num, run_num, batch_size, feat):
             bert,train_dataloader, val_dataloader, test_seq, test_mask,test_y, val_seq, val_mask, val_y, train_labels, df  = get_data(label, 'split_type', df0, train_text, train_labels, val_text, val_labels, test_text, test_labels, batch_size, feat)
             
             if label =='AUTHOR_OR':
-                save_path ='saved_weights_ctbertdnn_auth_test'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.pt'
+                save_path ='performance/saved_wts/author'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.pt'
             if label =='FAMILY_OR':
-                save_path ='saved_weights_ctbertdnn_fam_test'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.pt'
+                save_path ='performance/saved_wts/fam'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.pt'
             if label =='ABT_FAMILY':
-                save_path ='saved_weights_ctbertdnn_abt_fam_test'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.pt'
+                save_path ='performance/saved_wts/abt_fam'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.pt'
 
             
             model, train_losses, valid_losses, epch, lr = run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, save_path)
@@ -651,11 +651,11 @@ def main2(label,enc_num, run_num, batch_size, feat):
             df_val['Sig_Predictions'] = val_preds_sig
             df_val['Predictions'] = val_preds
             if label =='AUTHOR_OR': 
-                df_val.to_csv('/author_val2/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
+                df_val.to_csv('performance/author_val/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
             if label =='FAMILY_OR':
-                df_val.to_csv('/family_val2/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
+                df_val.to_csv('performance/family_val/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
             if label =='ABT_FAMILY':
-                df_val.to_csv('/abt_family_val/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
+                df_val.to_csv('performance/abt_fam_val/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
          
 
             test_preds_sig, test_preds, test_th, test_f1 = test(model, test_seq, test_mask, test_y, train_losses, valid_losses,label, df, epch, lr,batch_size, enc_num, train_index,test_index,  train_index2, test_index2,  val =False, val_th =val_th  ) #, tempr
@@ -664,11 +664,11 @@ def main2(label,enc_num, run_num, batch_size, feat):
             df_temp['Predictions'] = test_preds
             df_temp['Sig_Predictions'] = test_preds_sig
             if label =='AUTHOR_OR': 
-                df_temp.to_csv('/author_test2/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
+                df_temp.to_csv('performance/author_test/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
             if label =='FAMILY_OR':
-                df_temp.to_csv('/family_test2/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
+                df_temp.to_csv('performance/fam_test/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
             if label =='ABT_FAMILY':
-                df_val.to_csv('/abt_family_test/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
+                df_val.to_csv('performance/abt_fam_test/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
 
             out_file.write(str(val_th)+"\n")
             out_file.flush()
@@ -680,11 +680,11 @@ def main(label,enc_num, run_num, batch_size, feat):
     
     bert,train_dataloader, val_dataloader, test_seq,  test_mask,test_y,  train_labels, df = get_data( label,'auto', 0,0,0,0,0, batch_size,feat )
     if label =='AUTHOR_OR':
-        save_path ='/home/adhiman/SAR-z/classifier/ct_bert/testing weight/cross_val_ctbert/saved_weights_ctbertdnn_auth_test'+str(run_num)+'.pt'
+        save_path ='performance/saved_wts/saved_weights_ctbertdnn_auth_test'+str(run_num)+'.pt'
     if label =='FAMILY_OR':
-        save_path ='/home/adhiman/SAR-z/classifier/ct_bert/testing weight/cross_val_ctbert/saved_weights_ctbertdnn_fam_test'+str(run_num)+'.pt'
+        save_path ='/performance/saved_wts/saved_weights_ctbertdnn_fam_test'+str(run_num)+'.pt'
     if label =='ABT_FAMILY':
-        save_path ='/home/adhiman/SAR-z/classifier/ct_bert/testing weight/cross_val_ctbert/saved_weights_ctbertdnn_abt_fam_test'+str(run_num)+'.pt'
+        save_path ='/performance/saved_wts/saved_weights_ctbertdnn_abt_fam_test'+str(run_num)+'.pt'
     print (save_path)
     model, train_losses, valid_losses, epch, lr = run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, save_path)
 

@@ -62,6 +62,8 @@ from sadice import SelfAdjDiceLoss
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler, WeightedRandomSampler
 from preprocess import clean_tweets
 from transformers import BertTokenizer, BertModel
+import shutil
+
 
 print (torch.__version__)
 
@@ -200,7 +202,7 @@ def test( twt_seq, twt_mask,  batch_size, model_path, T='x', y_test=[]):
     
     
     for runen, batch in enumerate(twt_dataloader):
-        # print (runen)
+        print (runen)
         # push the batch to gpu
         batch = [t.to(device) for t in batch]
 
@@ -211,36 +213,40 @@ def test( twt_seq, twt_mask,  batch_size, model_path, T='x', y_test=[]):
 
             # model predictions
             preds = model(sent_id, mask)
-
-            preds_ = preds.detach().cpu().numpy()
             
-            pred_sigmoid = torch.sigmoid(torch.from_numpy(preds_))
+            preds_ = preds.detach().cpu()#.numpy()
             
-            if T!='x':
+            pred_sigmoid = torch.sigmoid(torch.from_numpy(preds_.numpy()))
+            
+            '''if T!='x':
                 T_pred = T_scaling(preds, T)
                 
-            T_pred = T_pred.detach().cpu().numpy()
+            T_pred = T_pred.detach().cpu().numpy()'''
                 
             
-            #total_preds_ =total_preds_ + list(preds_)
-            total_preds_ =total_preds_ + list(pred_sigmoid)
-            total_T_preds =total_T_preds + list(T_pred)
+            total_T_preds =total_T_preds + list(preds_)
+            
+            total_preds =total_preds_ + list(pred_sigmoid)
             
             
-    total_preds_ = np.array(total_preds_)    
+            
+            #total_T_preds =total_T_preds + list(T_pred)
+            
+            
+    total_preds_ = np.array(total_preds)    
     total_T_preds = np.array(total_T_preds)    
-        
-    
+
+
     torch.cuda.empty_cache()
     
-    return total_preds_, total_T_preds
+    return total_preds_ , total_T_preds
     
 
 
 def getinput1(label):
     
 
-    df = read_pickle1('/labeled_tweets.pkl')
+    df = pd.read_csv('../data/labeled_data/labels-949-nontrunc(old).csv')
 
     df['ABT_FAMILY'] = df['FAMILY'].astype(bool)
     df = clean_tweets(df, False, remove_duplicates=False)
@@ -296,21 +302,22 @@ def main_prob():
     
     feat = 'TWEET_TEXT_PROCESSED'
     print (feat)
+    all_users = glob.glob('/disks/sdb/adhiman/SAR_data/data/user_timelines/*.pkl')
     
-    pr = pd.read_csv('/home/adhiman/SAR-z/classifier/p_rall.csv')
+    #pr = pd.read_csv('/home/adhiman/SAR-z/classifier/p_rall.csv')
     #print (pr.head())
-    users = pr[pr['0']=='fail']['Unnamed: 0'].tolist()
+    #users = pr[pr['0']=='fail']['Unnamed: 0'].tolist()
     
-    all_users = [''.join(['uk_users/', str(x),'/api.pkl' ]) for x in users ]
+    #all_users = [''.join(['uk_users/', str(x),'/api.pkl' ]) for x in users ]
     
     print (all_users[:5])
     
     print ("====Accessing users: ",len(all_users))
     
 
-    load_path_auth = 'ctbertdnn_auth_test1.pt'
-    load_path_fam = 'ctbertdnn_fam_test1.pt'
-    load_path_abtfam = 'ctbertdnn_abt_fam101.pt'
+    load_path_auth = 'performance/final_wts/ctbertdnn_auth_test1.pt'
+    load_path_fam = 'performance/final_wts/ctbertdnn_fam_test1.pt'
+    load_path_abtfam = 'performance/final_wts/ctbertdnn_abt_fam101.pt'
     
     
     label_list = ['AUTHOR_OR', 'FAMILY_OR', 'ABT_FAMILY']
@@ -321,10 +328,15 @@ def main_prob():
         to_remove = []
         for u in users:
             user  = u.split('/')[-2]
-            
             df_f = read_pickle1(u)
             if df_f.shape[1]!=0:
-                df_temp =pd.concat([df_temp, read_pickle1(u)])
+                df_u = read_pickle1(u)
+                uid = u.split('/')[-1].replace('.pkl','')
+                if not os.path.exists(f'/disks/sdb/adhiman/SAR_data/data/user_scores/{uid}'):
+                    os.mkdir(f'/disks/sdb/adhiman/SAR_data/data/user_scores/{uid}')
+                        
+                df_u.to_pickle(f'/disks/sdb/adhiman/SAR_data/data/user_scores/{uid}/api.pkl')
+                df_temp =pd.concat([df_temp, df_u])
             else:
                 to_remove(u)
                 
@@ -351,25 +363,24 @@ def main_prob():
                     #pred, p_lbl, T_pred, T_p_lbl = test( twt_seq, twt_mask,batch_size, load_path_fam, 1 , []) #1.897
                     pred,  T_pred = test( twt_seq, twt_mask,batch_size, load_path_abtfam, 1 , []) #1.897
                     
-
+                
                 test_df = pd.DataFrame(pd.np.column_stack([df_temp[['TWEET_ID','USER_ID', 'TWEET_TEXT','TWEET_TEXT_PROCESSED']] , pred])).rename(columns={0: 'TWEET_ID', 1: 'USER_ID', 2: 'TWEET_TEXT', 3: 'TWEET_TEXT_PROCESSED', 4: 'PRED'})
 
                 print (test_df.shape)
                 test_df = pd.DataFrame(pd.np.column_stack([test_df , T_pred])).rename(columns={0: 'TWEET_ID', 1: 'USER_ID', 2: 'TWEET_TEXT', 3: 'TWEET_TEXT_PROCESSED', 4: 'PRED', 5: 'T_PRED'})
                 test_df['PRED'] = test_df['PRED'].apply(lambda x: x.numpy()[0])
 
-
                 for u in users:
-                    user  = u.split('/')[-2]
-                    #print (user)
+                    
+                    user  = u.split('/')[-1].replace('.pkl','')
                     df_u = test_df[test_df['USER_ID']==user]
                     
                     if label=='FAMILY_OR':
-                        df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/uk_user_scores/'+str(user)+'/fam_score.pkl')
+                        df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/disks/sdb/adhiman/SAR_data/data/user_scores/'+str(user)+'/fam_score.pkl')
                     if label=='AUTHOR_OR':
-                         df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/uk_user_scores/'+str(user)+'/author_score.pkl')
+                         df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/disks/sdb/adhiman/SAR_data/data/user_scores/'+str(user)+'/author_score.pkl')
                     if label=='ABT_FAMILY':
-                         df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/uk_user_scores/'+str(user)+'/abtfam_score.pkl')
+                         df_u.drop(columns =['USER_ID','TWEET_TEXT_PROCESSED']).set_index('TWEET_ID').to_pickle('/disks/sdb/adhiman/SAR_data/data/user_scores/'+str(user)+'/abtfam_score.pkl')
                             
 
 if __name__ == "__main__":
