@@ -8,21 +8,30 @@ The classifier has been trained on a dataset of [labeled_tweet_id2](labeled_twee
 
 
 ## seed tweets
+For initial data collection of seed tweets following run the python file tweet_collection.py in folder tweet_collection
 
-use python tweet_collection.py 
+`python tweet_collection.py` 
 
 ## user profile collection
 
-python user_tweet_collection.py 1 '../data/seed_tweets/' '../data/user_profiles'
+To collect the user profiles run the file user_tweet_collection.py in folder user_tweet_collection, with the option =1 and input and output directory path as shown below.
+
+`python user_tweet_collection.py 1 '../data/seed_tweets/' '../data/user_profiles'`
 
 
 ## user location identification
 
-python loc.py
+For geolocation of the tweets run the python file loc.py in folder user_tweet_collection as shown below
+
+`python loc.py`
+
+It will save the updated user profile files to the folder data/location_data/UK_users for each month.
 
 ## data collection for user tweets
 
-python user_tweet_collection.py 2 '../data/location_data/UK_users' '../data/user_timelines/
+Finally the users that were identified to be located in UK can be downloaded usign option 2 on the file user_tweet_collection.py in folder user_tweet_collection. This will also require providing the input path and the output path.
+
+`python user_tweet_collection.py 2 '../data/location_data/UK_users' '../data/user_timelines/`
 
 
 ## Text Preprocessing
@@ -37,7 +46,20 @@ We utilized the Covid-Twitter-BERT (CT-BERT) model for classification, which is 
 
 To run the [ct-bert2-crossval.py](ct-bert2-crossval.py) script, please use the [run_ct_bert.sh](run_ct_bert.sh) shell file.
 
+Three classifiers have three possible values of the label, 'AUTHOR_OR', 'FAMILY_OR', 'ABT_FAMILY'
+
+
 `sh ./run_ct_bert.sh`
+
+### Classifier Performance
+
+The performance of the classifier has been measured for metrics: Precision, Recall, F1 Score and Accuracy. These values can be calculated for all three classifiers separately. Use file test_res.py
+
+`python test_res.py`
+
+For the calculation of AUC ROC of the three classifiers use the file compute_auc.py
+`python compute_auc.py`
+
 
 ## User Tweets Classification 
 After being trained on the labeled tweet dataset, the classification model is then utilized to generate prediction scores for all the tweets of all users. This involves running the model on the entire tweet corpus to classify each tweet based on its content and generate a corresponding prediction score.
