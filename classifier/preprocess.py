@@ -29,7 +29,6 @@ import re
 import string 
 import tempfile
 import concurrent.futures
-import swifter
 punctuations = list(string.punctuation)
 import sys
 from sklearn.decomposition import PCA
@@ -224,13 +223,13 @@ def clean_tweets(df_in,covid=False, remove_duplicates=True):
 
 
 if __name__ == "__main__":
-    df = read_pickle1('/labeled_tweet.pkl')
+    df = read_pickle1('../data/user_timelines/276945706.pkl')
     df = df.replace('NO', 0)
     df = df.replace('YES', 1)
 
     df = clean_tweets(df, remove_duplicates=True)
     #print (df.head())
-    df.to_pickle('/labeled_tweet_processed.pkl')
+    df.to_pickle('../data/user_timelines_preprocessed/276945706.pkl')
 
 
 
