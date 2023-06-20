@@ -1,0 +1,2 @@
+,TWEET_ID,log,PRED,T_PRED,USER_ID,LOCATION,TIMESTAMP,TWEET_TEXT
+1,1429918960263303178,2.37934,0.9999795,tensor([10.7978]),276945706,,2021-08-23 21:30:21+00:00,i lost my brother and sister to covid get the fuck over yourself
