@@ -597,40 +597,6 @@ def pred_sar(summ,elad, gold_df, si, total_users):
    
     class_summ = summary.drop(columns=['RATE']).apply(pd.Series.value_counts).T
 
-    ''' ##old method
-    print ('==================================')
-
-    p= {}
-    p_2 ={}
-    p_df = pd.DataFrame()
-    for x in summary.drop(columns= ['RATE']).columns.values:
-       
-        y = summary[[x,'RATE']].replace('10', np.nan).replace('20', np.nan) ###update
-        
-        y = y.dropna()
-       
-        c = summary[[x]].count().values[0]
-        p_u = y['RATE'].sum()/y.shape[0]
-        p[x] = p_u
-       
-        valid_users = summary[[x]].dropna().index.tolist()
-       
-        y2 = summary[summary.index.isin(valid_users)][[x,'RATE']]
-        
-        p_u2 = y2[y2['RATE']>0.0].shape[0]/summary.shape[0]  
-       
-        p_2[x] = p_u2
-
-    p_df = pd.DataFrame.from_dict(p, orient='index', columns = ['P_U'])
-    
-    p_df2 = pd.DataFrame.from_dict(p_2, orient='index', columns = ['P_U2'])
-   
-    class_summ =class_summ.merge(si, left_index =True, right_index=True )
-   
-    
-    class_summ =class_summ.merge(p_df2, left_index =True, right_index=True )
-    class_summ = class_summ.merge(p_df, left_index = True, right_index = True)
-    '''
  
     table =class_summ.copy()
     table =table.fillna(0)
@@ -650,7 +616,7 @@ def pred_sar(summ,elad, gold_df, si, total_users):
     table['alpha1'] = (table['12'])/(table['12']+table['10'])
 
     
-    print (table)
+ 
     slope, intercept, r_value, p_value, std_err = stats.linregress(table['alpha1'].tolist(), table['alpha2'].tolist())
   
    
