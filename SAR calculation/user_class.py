@@ -97,7 +97,8 @@ def find_best_pair(auth_df, fam_df, days): ## method that finds the best pair of
             return "nothing"
         
 def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, user):
-    
+
+    #method for final classification
     author_positive = author_positive_df.copy()
     family_positive = family_positive_df.copy()
 
@@ -114,7 +115,7 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
         
         author_positive.TIMESTAMP = pd.to_datetime(author_positive.TIMESTAMP, utc=True)
 
-        author_positive["MONTH_ID"] = author_positive.TIMESTAMP.dt.month + (author_positive.TIMESTAMP.dt.year-2020)*12 ##mnth
+        author_positive["MONTH_ID"] = author_positive.TIMESTAMP.dt.month + (author_positive.TIMESTAMP.dt.year-2020)*12 ## getting the month ID starting from 1 for Jan 2020.
         
         '''author_positive['delta'] = author_positive.TIMESTAMP - start_of_timeline ##week
         author_positive['week'] = (author_positive['delta'].dt.days // 7) + 1 ##week
@@ -148,7 +149,7 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
        
         family_positive = family_positive.sort_values("FAMILY_SCORE", ascending=False).reset_index()
         
-        family_positive['PROB_F'] =  0.5 + 0.5*((family_positive['FAMILY_SCORE']- tau_f)/(max_f - tau_f))
+        family_positive['PROB_F'] =  0.5 + 0.5*((family_positive['FAMILY_SCORE']- tau_f)/(max_f - tau_f)) #calculating the probability from the prediction score
 
     
     wd={}
@@ -159,55 +160,56 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
     
     month_ids = {'auth_month':[], 'fam_month':[]}    
     
-    if author_positive.shape[0]>0 and family_positive.shape[0]==0:
+    if author_positive.shape[0]>0 and family_positive.shape[0]==0: #when only author-positive tweets exist
 
         auth_month_id = int(author_positive.iloc[0]['MONTH_ID'])
 
-        classification[auth_month_id]=str(10)
+        classification[auth_month_id]=str(10) #class assigned 10
         wd[auth_month_id] = auth_cnf
         p_val = author_positive.iloc[0]['PROB_A']
-        month_ids['auth_month'] = author_positive['MONTH_ID'].tolist()
+        month_ids['auth_month'] = author_positive['MONTH_ID'].tolist() #month ID assigned 
         class_p[auth_month_id] = p_val
 
-    if author_positive.shape[0]==0 and family_positive.shape[0]>0:
+    if author_positive.shape[0]==0 and family_positive.shape[0]>0: #when only family-positive tweets exist
         fam_month_id = int(family_positive.iloc[0]['MONTH_ID'])
 
-        classification[fam_month_id]=str(20)
+        classification[fam_month_id]=str(20) #class assigned 20
         wd[fam_month_id] = fam_cnf
         p_val = family_positive.iloc[0]['PROB_F']
-        month_ids['fam_month'] = family_positive['MONTH_ID'].tolist()
+        month_ids['fam_month'] = family_positive['MONTH_ID'].tolist() #month ID assigned 
         class_p[fam_month_id] = p_val
 
-    if author_positive.shape[0]>0 and family_positive.shape[0]>0:
+    if author_positive.shape[0]>0 and family_positive.shape[0]>0: #when both fam-positive and  author positive exists
 
         days = 14
-        delta, auth_month_id, fam_month_id, p_a, p_f = find_best_pair(author_positive, family_positive, days)
+        delta, auth_month_id, fam_month_id, p_a, p_f = find_best_pair(author_positive, family_positive, days) #finding the best pair in author and family positive tweets
         
-      
-        month_ids['auth_month'] = author_positive['MONTH_ID'].tolist()
+        # saving month IDs
+        month_ids['auth_month'] = author_positive['MONTH_ID'].tolist() 
         month_ids['fam_month'] = family_positive['MONTH_ID'].tolist()
 
 
    
 
-        if (delta>=1) and (delta<=days):
+        if (delta>=1) and (delta<=days): 
             #print ('12')
-            classification[auth_month_id] = str(12)
+            classification[auth_month_id] = str(12) #class assigned 12
             wd[auth_month_id] = (fam_cnf +auth_cnf)/2
-            serial_interval[auth_month_id] = delta
+            serial_interval[auth_month_id] = delta # serial interval value saved
             p_val = (p_a+p_f)/2
-            class_p[auth_month_id] = p_val
+            class_p[auth_month_id] = p_val 
 
 
         elif delta>=(0-days) and (delta<=-1):
             #print ('21')
-            classification[fam_month_id] = str(21)
+            classification[fam_month_id] = str(21) #class assigned 21
             wd[fam_month_id] = (fam_cnf +auth_cnf)/2
             serial_interval[fam_month_id] = delta
             p_val = (p_a+p_f)/2
             class_p[fam_month_id] = p_val
 
-        elif delta!=0:                                          
+        elif delta!=0:          
+            # if delta exceed given period, both 10 and 20 are assigned individually
             classification[auth_month_id] = str(10)
             wd[auth_month_id] = auth_cnf
             class_p[auth_month_id] = p_a
@@ -216,7 +218,7 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
             wd[fam_month_id] = fam_cnf
             class_p[fam_month_id] = p_a
 
-        else:
+        else: #delta==0
             serial_interval = {}
             pass
 
@@ -226,7 +228,8 @@ def classes(author_positive_df, family_positive_df, fam_cnf, auth_cnf, path, use
     
     #print (serial_interval)
     if len(classification) > 0:
-        with open(f"{path}/classifications.json", 'w') as fp:
+        #save classification for each user
+        with open(f"{path}/classifications.json", 'w') as fp: 
             json.dump(json_cls, fp) 
         with open(f"{path}/months.json", 'w') as fm:
             json.dump(month_ids, fm)
@@ -240,6 +243,7 @@ def author_fam_positive(user, path, out_path, auth_th, fmth_th):
     auth_conf = 0
     fam_conf = 0
     exist=True
+    #similar steps as author_fam_positive2 method, but without preprocessinf and checks for threshold.
     if os.path.exists(f'../data/user_positives/{user}/author_positive.csv'):
         author_positive = pd.read_csv(f'../data/user_positives/{user}/author_positive.csv')
         #print (author_positive)
@@ -294,7 +298,7 @@ def author_fam_positive(user, path, out_path, auth_th, fmth_th):
 
     
         
-def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
+def author_fam_positive2(user, path, out_path, auth_th, fmth_th): #creating author-positive and family-positive files and then doinfg user classification for SAR
     
     thresh= {}
     thresh['author_threshold']= auth_th
@@ -302,21 +306,21 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
     
 
     try:
-        tweets = read_pickle1(f'{path}{user}/api.pkl')
+        tweets = read_pickle1(f'{path}{user}/api.pkl') #original user timeline tweets
     except:
         return
    
     
-    if os.path.exists(f'{path}{user}/author_score.pkl'):
+    if os.path.exists(f'{path}{user}/author_score.pkl'): # transforming prediction scores to desired type for author
         author_tweets = read_pickle1(f'{path}{user}/author_score.pkl')
         
-        author_tweets['log'] = np.log(author_tweets['T_PRED'].astype('float32'))
+        author_tweets['log'] = np.log(author_tweets['T_PRED'].astype('float32')) 
         author_tweets= author_tweets.fillna(-100)
         author_tweets = author_tweets[['log', 'PRED', 'T_PRED']]
     else:
         author_tweets = pd.DataFrame()
     
-    if os.path.exists(f'{path}{user}/fam_score.pkl'):
+    if os.path.exists(f'{path}{user}/fam_score.pkl'): # transforming prediction scores to desired type for family tweets
         family_tweets = read_pickle1(f'{path}{user}/fam_score.pkl')
         
         family_tweets['log'] = np.log(family_tweets['T_PRED'].astype('float32'))
@@ -333,7 +337,7 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
 
     tweets.TIMESTAMP = pd.to_datetime(tweets.TIMESTAMP, utc=True)
 
-    author_tweets = author_tweets[author_tweets.index.astype('str').isin(tweets[tweets.TIMESTAMP > "2020-01-01"].index.astype('str'))]
+    author_tweets = author_tweets[author_tweets.index.astype('str').isin(tweets[tweets.TIMESTAMP > "2020-01-01"].index.astype('str'))] #using only tweets after Jan 2020
 
     family_tweets = family_tweets[family_tweets.index.astype('str').isin(tweets[tweets.TIMESTAMP > "2020-01-01"].index.astype('str'))]
 
@@ -355,7 +359,7 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
     if author_tweets.shape[0]>0:
 
         
-        auth_max = author_tweets[author_tweets['log'] >= thresh['author_threshold']] 
+        auth_max = author_tweets[author_tweets['log'] >= thresh['author_threshold']] #tweets with score above threshold
         
   
         auth_max = auth_max.reset_index()
@@ -383,11 +387,11 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
             auth_max['TWEET_ID'] = auth_max['TWEET_ID'].astype('str')
 
 
-            author_positive = auth_max.merge(tweets, on='TWEET_ID',how='inner' )
+            author_positive = auth_max.merge(tweets, on='TWEET_ID',how='inner' ) #getting the tweet text for tweets above threhsold
             
 
             path1 =out_path+str(user)
-            
+            #pre-processing
             author_positive = author_positive.drop_duplicates(subset=['TWEET_ID'])
             author_positive['TWEET_TEXT'] = author_positive['TWEET_TEXT'].apply(lambda x: re.sub('@[A-Za-z0-9_]+','', x))
             author_positive['TWEET_TEXT'] = author_positive['TWEET_TEXT'].apply(lambda x: re.sub('http\S+','', x))
@@ -404,12 +408,12 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
                 if not os.path.exists(f'../data/user_positives/{user}/'):
                     os.mkdir(f'../data/user_positives/{user}/')
                 #print (author_positive)
-                author_positive.to_csv(f'../data/user_positives/{user}/author_positive.csv')
+                author_positive.to_csv(f'../data/user_positives/{user}/author_positive.csv') #saving as author-positive. This file is used directly through author_fam_positive method
             else:
                 author_positive = pd.DataFrame()
   
             if author_positive.shape[0]>0:
-                auth_conf = author_positive['PRED'].values[0]
+                auth_conf = author_positive['PRED'].values[0] #retreiving this value for EladSAR calculation
             else:
                 auth_conf = min_a
                 
@@ -423,7 +427,7 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
         if abt_fam.shape[0]>0:
             p_f = abt_fam[abt_fam['T_PRED']>2].shape[0]/abt_fam.shape[0]
             #print (abt_fam.head())
-            abt_fam_twts= abt_fam[abt_fam['T_PRED']>2].index.tolist()
+            abt_fam_twts= abt_fam[abt_fam['T_PRED']>2].index.tolist() # about family tweets
             
         else:
             p_f = 0
@@ -434,7 +438,7 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
 
             family_max['TWEET_ID'] = family_max['TWEET_ID'].astype('str')
 
-            family_positive = family_max.merge(tweets, on='TWEET_ID', how='inner')
+            family_positive = family_max.merge(tweets, on='TWEET_ID', how='inner') # getting tweets for family_positive tweets
             
             if (family_positive.shape[0]==0):
                 print ("=======================================")
@@ -443,9 +447,9 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
             
             path1 =out_path+str(user)
             
-            family_positive = family_positive[family_positive['TWEET_ID'].isin(abt_fam_twts)]
+            family_positive = family_positive[family_positive['TWEET_ID'].isin(abt_fam_twts)] # using only those tweets that are above the About_Family threshold.
             
-            
+            #preprocessing
             family_positive = family_positive.drop_duplicates(subset=['TWEET_ID'])
             family_positive['TWEET_TEXT'] = family_positive['TWEET_TEXT'].apply(lambda x: re.sub('@[A-Za-z0-9_]+','', x))
             family_positive['TWEET_TEXT'] = family_positive['TWEET_TEXT'].apply(lambda x: re.sub('http\S+','', x))
@@ -457,7 +461,7 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
             family_positive = family_positive.dropna(subset= ['log'])
             
             
-            if family_positive.shape[0]<=75: ####removing the outlier case (just one)
+            if family_positive.shape[0]<=75: ####removing the outlier case (just one) reached 75 by checking manually
                 if not os.path.exists(f'../data/user_positives/{user}/'):
                     os.mkdir(f'../data/user_positives/{user}/')
 
@@ -468,7 +472,7 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
 
             
             if family_positive.shape[0]>0:
-                fam_conf = family_positive['PRED'].values[0]
+                fam_conf = family_positive['PRED'].values[0] #for elad SAR
           
             else:
                 fam_conf = min_f
@@ -482,6 +486,8 @@ def author_fam_positive2(user, path, out_path, auth_th, fmth_th):
             return (user,eld_w, p_f, class_assg, serial_interval, class_p)
 
 def calSAR(classes0):
+
+    # merging output for all users in one file
     classes = classes0.copy()
 
     final_classes = {}
@@ -535,6 +541,8 @@ def calSAR(classes0):
 
     
 def elad_sar2(summ, w_df):
+
+    # calculation of regression SAR
     summary = summ.copy()
    
     elad_SARs = {}
@@ -584,12 +592,12 @@ def pred_sar(summ,elad, gold_df, si, total_users):
     
     summary = summ.copy()
 
-    p_x = summary[summary['RATE']!=0.0].shape[0]/77016
+    
 
    
     class_summ = summary.drop(columns=['RATE']).apply(pd.Series.value_counts).T
 
-   
+    ''' ##old method
     print ('==================================')
 
     p= {}
@@ -597,7 +605,7 @@ def pred_sar(summ,elad, gold_df, si, total_users):
     p_df = pd.DataFrame()
     for x in summary.drop(columns= ['RATE']).columns.values:
        
-        y = summary[[x,'RATE']].replace('10', np.nan).replace('20', np.nan).replace('11020', np.nan).replace('21020', np.nan) ###update
+        y = summary[[x,'RATE']].replace('10', np.nan).replace('20', np.nan) ###update
         
         y = y.dropna()
        
@@ -622,7 +630,7 @@ def pred_sar(summ,elad, gold_df, si, total_users):
     
     class_summ =class_summ.merge(p_df2, left_index =True, right_index=True )
     class_summ = class_summ.merge(p_df, left_index = True, right_index = True)
-    
+    '''
  
     table =class_summ.copy()
     table =table.fillna(0)
@@ -640,6 +648,7 @@ def pred_sar(summ,elad, gold_df, si, total_users):
    
     table['alpha2'] = (table['21'])/(table['21']+table['20'])
     table['alpha1'] = (table['12'])/(table['12']+table['10'])
+
     
     print (table)
     slope, intercept, r_value, p_value, std_err = stats.linregress(table['alpha1'].tolist(), table['alpha2'].tolist())
@@ -679,7 +688,7 @@ def pred_sar(summ,elad, gold_df, si, total_users):
    
     
     
-def gold():
+def gold(): ##data from multiple sources. Not used in paper
     gold2min = 0.08
     gold2max = 0.48
     gold1min = 0.046
@@ -743,7 +752,7 @@ def gold():
     return gold_df
 
 
-def prep_ground():
+def prep_ground(): #preparing PHE ground truth data
     
     gr = pd.read_csv('phe_sar_only.csv')
     gr.index = pd.to_datetime(gr.Month, format="%b %y")
@@ -752,7 +761,7 @@ def prep_ground():
     
     return gr
 
-def plot_data(tab, all_probs,  path, ath,fth,v, r):
+def plot_data(tab, all_probs,  path, ath,fth,v, r): #saving the output as csv
     table =tab.copy()
     ath =round(ath,3)
     fth =round(fth,3)
@@ -807,15 +816,15 @@ def basic_run( inpath, outpath,auth, fmth, v):
     pool.close()
     print (classes)
     
-    summ, elad_w, si, all_probs = calSAR(classes)
+    summ, elad_w, si, all_probs = calSAR(classes) ##converting output of pool to required data structures
     
 
     gold_std = gold()
    
     
-    elad_res = elad_sar2(summ, elad_w)
+    elad_res = elad_sar2(summ, elad_w) # Regression based SAR calculation
    
-    pred_res = pred_sar(summ, elad_res, gold_std,si, len(user_ids))
+    pred_res = pred_sar(summ, elad_res, gold_std,si, len(user_ids)) #calculating final SAR values
     
 
     ############################################
