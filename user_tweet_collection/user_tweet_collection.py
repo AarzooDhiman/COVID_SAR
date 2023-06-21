@@ -21,11 +21,11 @@ user_columns = ["id", "created_at", "description", "location","protected", "foll
 
 headers = {'authorization': "BEARER TOKEN"} #add your token here
 
-url = "https://api.twitter.com/2/users"
+url = "https://api.twitter.com/2/users" # url for getting user timeline
 querystring1 = {"ids":None,"user.fields":"id,created_at,location,protected,description,public_metrics"} #, "start_time":"2020-01-01T00:00:00Z"
 
 def make_api_query(ids):
-    #print (ids)
+    #making API request
     querystring1["ids"] = ",".join([str(x) for x in ids])
     #print (querystring1)
     response_text = requests.request("GET", url, headers=headers, params=querystring1).text
@@ -49,6 +49,7 @@ def read_pickle1(pth):
 
 
 def parse_user(user):
+    # parsing the json response
     timestamp = user.get("created_at")
     user_id = user.get("id")
     bio = user.get("description")
@@ -83,6 +84,7 @@ headers = {'authorization': "BEARER TOKEN"} #add your token here
 querystring2 = {"since_id":1,"exclude":"retweets","tweet.fields":"id,author_id,created_at,geo","max_results":100, "end_time":"2022-02-01T00:00:00Z"} #TODO: limit date download 
 
 def make_timeline_query(user_id, next_token=None):
+    # design query for user timeline
     url = f"https://api.twitter.com/2/users/{user_id}/tweets"
     
     if next_token is None:
@@ -150,7 +152,7 @@ def status_update(user_id, status, size):
     #statuses.to_csv(f"/disks/sdb/adhiman/SAR_data/data/seed_tweets/statuses.csv", index=False, columns = statuses_columns)
 
 
-
+# method for getting user profiles
 def getting_uk_users(source, dest):
 
     month = source.split('/')[-1] ###remove
@@ -159,6 +161,7 @@ def getting_uk_users(source, dest):
     data = read_pickle1(source)
     
     print (data.head())
+    # getting the user iDs for profile collection
     downloaded_users = pd.DataFrame(data['USER_ID'].unique(), columns = ['USER_ID'])
     print ("===========shape of users=========")
     print (downloaded_users.shape)
@@ -171,14 +174,12 @@ def getting_uk_users(source, dest):
     if not os.path.exists(dest + "/all_user_profiles"):
         os.mkdir(dest + "/all_user_profiles")
     
-        
-
-    
     limit = 100            
     for i in range(0, downloaded_users.shape[0], limit):
         print (i)
-        #print (downloaded_users['USER_ID'][i: i+5])
+        #getting 100 users at a time
         if i+5<downloaded_users.shape[0]:
+            # getting profiles
             try:
                 downloaded_df0 = download_and_parse(downloaded_users['USER_ID'][i: i+limit])
             except:
@@ -201,12 +202,6 @@ def getting_uk_users(source, dest):
     print (downloaded_df.head())
     
     downloaded_df.to_pickle(dest + "/all_user_profiles/"+str(month)) ###remove
-   
-    
-    
-    
-
-
     
 def collect_timeline(source, dest):
     
@@ -227,12 +222,12 @@ def collect_timeline(source, dest):
     print (len(users))
    
     
-    
+    # finding existing users so no data collection repetition
     ex_users = glob.glob('../data/user_timelines/*.pkl')
     existing=[e.split('/')[-1].replace('.pkl','') for e in ex_users]
     print (existing[:5])
-    #rem_users = list(set(users).difference(set(existing)))
-    rem_users = list(set(users).intersection(set(existing)))
+    rem_users = list(set(users).difference(set(existing))) # using only remaining users
+    #rem_users = list(set(users).intersection(set(existing)))
     print ('existing users \t'+str(len(existing)))
     print ('Total users \t'+str(len(users)))
     print ('matching users \t'+str(len(rem_users)))
@@ -256,13 +251,6 @@ def collect_timeline(source, dest):
                     pbar2.update(1)
                     continue
                 
-                
-                #new_user = {'existing': str(user_id)}
-                #ex_users.loc[ex_users.shape[0]] = new_user
-                #added=pd.DataFrame()
-                #added = pd.DataFrame(list(str(user_id)), columns =['existing'])
-                #ex_users= pd.concat([ex_users,added])
-                #ex_users.to_pickle('/disks/sda/adhiman/SAR-z/raw_tweets/existing_users.pkl')    
                     
                 status_update(user_id, "OK", len(timeline)) #file read/save
                 #print (timeline)
@@ -295,7 +283,7 @@ def main():
     #source  = args[0]
     #dest = args[1] 
     
-    if args[0]==str(1):
+    if args[0]==str(1): # for getting user profile information
         if os.path.isdir(args[1]):
             files = glob.glob(args[1]+'/*pkl')
             for file in files:
@@ -303,7 +291,7 @@ def main():
         else:
             print ("getting UK users")
             getting_uk_users(args[1], args[2])
-    elif args[0]==str(2):
+    elif args[0]==str(2): # for getting user timelines
         if os.path.isdir(args[1]):
             files = glob.glob(args[1]+'/*pkl')
             print ("collecting UK users timeline")
