@@ -96,7 +96,7 @@ def geo_loc( path, uk_locs,us_locs):
         #  set UK to True only if place does not contain ['America', 'United States', 'US', 'USA', 'NY', 'TX', 'CA', 'MI']
         if (profile.loc[i, 'UK']== True and profile.loc[i, 'US']== False):
             try:
-                if any(s.lower() in row['location'].lower() for s in ['America', 'United States', 'US', 'USA', 'NY', 'TX', 'CA', 'MI']):
+                if any(s.lower() in row['location'].lower() for s in ['America', 'United States', 'US', 'USA', 'NY', 'TX', 'CA', 'MI', 'NC']):
                     profile.loc[i, 'UK'] =False
                 if row['location'].lower()=='ireland' and row['location'].lower()!='northern ireland': # special case for northern ireland
                     profile.loc[i, 'UK'] =False 
