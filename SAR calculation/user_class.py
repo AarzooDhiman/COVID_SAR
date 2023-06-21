@@ -592,9 +592,6 @@ def pred_sar(summ,elad, gold_df, si, total_users):
     
     summary = summ.copy()
 
-    
-
-   
     class_summ = summary.drop(columns=['RATE']).apply(pd.Series.value_counts).T
 
  
@@ -614,9 +611,8 @@ def pred_sar(summ,elad, gold_df, si, total_users):
    
     table['alpha2'] = (table['21'])/(table['21']+table['20'])
     table['alpha1'] = (table['12'])/(table['12']+table['10'])
-
     
- 
+    #getting these values to boost alpha1 and get pSAR
     slope, intercept, r_value, p_value, std_err = stats.linregress(table['alpha1'].tolist(), table['alpha2'].tolist())
   
    
@@ -625,17 +621,17 @@ def pred_sar(summ,elad, gold_df, si, total_users):
     table['fSAR'] = table["S1"]*table['alpha1']+table["S2"]*table['alpha2']
     table['pSAR'] = table["S1"]*table['p_alpha1']+table["S2"]*table['alpha2']
    
-    table["NAIVE_SAR"] = (table['12'] + table['21']) / table["A"]
+    table["NAIVE_SAR"] = (table['12'] + table['21']) / table["A"] # validation only
     
-    table = table.join(elad)
+    table = table.join(elad) # merging elad SAR
    
-    table = table.join(gold_df)
-   
+    table = table.join(gold_df) # merging gold df
+    #getting month and year format for month IDs
     datetime_series = pd.Series(pd.date_range("2019-12-01", periods=table.shape[0]+1, freq="M")) #+int(table.index[0]) ###mnth    
     
     datetime_series = datetime_series.dt.strftime("%b-%y")[table.index[0]:] ###mnth
 
-    
+    # use this for getting weekly values
     #datetime_series = pd.Series(pd.date_range("2020-01-01", periods=table.shape[0]+1, freq="W")) ##week
     #datetime_series =datetime_series+datetime.timedelta(days=2) #week
     #datetime_series = datetime_series.dt.strftime("%d-%b-%y")[table.index[0]:] ###week
