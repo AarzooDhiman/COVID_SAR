@@ -10,7 +10,7 @@ import pickle5 as pickle
 columns = ["TIMESTAMP", "TWEET_ID", "USER_ID", "GEO", "TWEET_TEXT"]
 statuses_columns = ["start_date", "end_date", "query", "count", "is_next", "next_token", "last_update"]
 
-
+# set the phrases for data collection
 
 tweet_query_text = "(\"i have covid\" OR \"i might have covid\" OR \"i had covid\" OR \"ve got covid\" OR \"i got covid\" OR \"ve had covid\" OR \"i tested positive for covid\" OR \"ve tested positive for covid\" OR \"ve been tested positive for covid\" OR \"I been tested positive for covid\" OR \"i have corona\" OR \"i might have corona\" OR \"i had corona\" OR \"ve got corona\" OR \"i got corona\" OR \"ve had corona\" OR \"i tested positive for corona\" OR \"ve tested positive for corona\" OR \"ve been tested positive for corona\" OR \"I lost my sense of smell\" OR \"ve lost my sense of smell\" OR \"I lost my sense of taste\" OR \"ve lost my sense of taste\" OR \"I lost sense of smell\" OR \"ve lost sense of smell\" OR \"I lost sense of taste\" OR \"ve lost sense of taste\" OR \"I lost the sense of smell\" OR \"ve lost the sense of smell\" OR \"I lost the sense of taste\" OR \"ve lost the sense of taste\" OR \"I lost taste and smell\" OR \"ve lost taste and smell\" OR \"I lost smell and taste\" OR \"ve lost smell and taste\") lang:en -is:retweet"
 
@@ -38,6 +38,7 @@ def read_pickle1(pth):
 
 
 def make_api_query(query_content):
+    # make API request for the query
     response_text = requests.request("GET", url, headers=headers, params=query_content).text
     response = json.loads(response_text)
     #with open('../../../../disks/sda/adhiman/SAR-z/data_withlocation/data_loc.json', 'a', encoding='utf-8') as f:
@@ -73,6 +74,7 @@ def get_next_token_by_date(start_date):
 
 def build_query(start_date):
     row = get_next_token_by_date(start_date)
+    #set required fields
     query_string = {"tweet.fields":"created_at,lang,geo,author_id", "user.fields":"id,created_at,location,description,public_metrics", "max_results":"500"}
     query_string["start_time"] = row["start_date"]
     query_string["end_time"] = row["end_date"]
@@ -86,6 +88,7 @@ def build_query(start_date):
     return None
 
 def parse_tweet(tweet):
+    # parsing the json response
     timestamp = tweet["created_at"]
     tweet_id = tweet["id"]
     text = tweet["text"]
@@ -119,6 +122,7 @@ if __name__ == '__main__':
         timestr = os.path.basename(continue_path)
     else:
         timestr = time.strftime("%Y%m%d-%H%M%S")
+        # set destination folder
         tmp_dir = f"../data/seed_tweets/" 
         #os.mkdir(tmp_dir)
     print(tmp_dir)
@@ -150,21 +154,24 @@ if __name__ == '__main__':
     while missing<len(get_bucket_range()): 
         missing = 0
         for start_date in get_bucket_range():
+            # bulding the query
             query = build_query(start_date)
             #print (query)
             if query is None:
                 missing =missing+ 1
                 continue
+            # making API request for the query
             json_response = make_api_query(query)
             #print (json_response)
             if json_response is None:
                 missing += 1
                 print(f"{start_date} {get_next_token_by_date(start_date)['end_date']} 0")
                 continue
-
+            # moving to remaining batch for same timeperiod
             tweets, count, next_token = parse_response(json_response)
             temp_df = pd.read_pickle(f"{tmp_dir}/{start_date}.pkl")
             temp_df = temp_df.append(tweets, ignore_index=True)
+            # saving the data collected
             temp_df.to_pickle(f"{tmp_dir}/{start_date}.pkl")
 
             status_update(start_date, count, next_token != None, next_token)
