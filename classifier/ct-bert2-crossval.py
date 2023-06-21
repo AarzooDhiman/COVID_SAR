@@ -116,7 +116,7 @@ def datasplit(label, feat):
     return train_text, train_labels, val_text, val_labels, test_text, test_labels, df
 
 
-def data_man(label, feat):
+def data_man(label, feat): # use this to use fixed train validation test split
     
     df_train= read_pickle1('/train-val-test/train.pkl')
     df_val= read_pickle1('/train-val-test/val.pkl')
@@ -266,7 +266,7 @@ class BERT_Arch(nn.Module):
         # dense layer 2 (Output layer)
         self.fc2 = nn.Linear(512,1)
 
-       
+        # using Sigmoid at the output layer
         self.sigmoid = nn.Sigmoid()
         
 
@@ -414,10 +414,10 @@ def evaluate(model, val_dataloader, cross_entropy):
     return avg_loss, total_preds
 
 def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, save_path):
-
+      
     #########################################################
 
-
+    # run the model 
     epochs =5
     my_lr = 2e-5
     enc_num = 0-enc_num
@@ -433,10 +433,11 @@ def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, sa
     #val_dataloader = val_dataloader.to(device)
     print ("=========================Total layers")
     print (len(list(bert.parameters())))
-    
+
+    # unfreezing some layers
     for name, param in list(bert.named_parameters())[:enc_num]:
         param.requires_grad = False
-        
+    # printing layer status
     for name, param in bert.named_parameters():
         if param.requires_grad == True:
             print('I am not frozen: {}'.format(name))
@@ -458,9 +459,8 @@ def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, sa
     scheduler = ReduceLROnPlateau(optimizer, 'min', patience= 4, factor=0.01, verbose=True)
 
 
-    #compute the class weights
-    #class_weights = compute_class_weight('balanced', np.unique(train_labels), train_labels)
-
+   
+    # defining the class weights for loss function for each classifier.
     if label == 'AUTHOR_OR':
         pos_wt = torch.tensor([2.86])
     if label == 'FAMILY_OR':
@@ -469,7 +469,7 @@ def run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, sa
         pos_wt = torch.tensor([2.82])
        
     pos_wt = pos_wt.to(device)
-
+    # defining the loss function 
     cross_entropy  = nn.BCEWithLogitsLoss(pos_weight=pos_wt) 
     
 
@@ -525,7 +525,7 @@ def test(model, test_seq, test_mask, test_y, train_losses, valid_losses, label, 
     #load weights of best model
     #path = 'ct_bert/saved_weights_ctbertdnn_2.pt'
     #model.load_state_dict(torch.load(path))
-
+    #creating test input for BERT
     test_seq = test_seq.to(device)
     test_mask = test_mask.to(device)
     #test_y = test_y.to(device)
@@ -540,7 +540,7 @@ def test(model, test_seq, test_mask, test_y, train_losses, valid_losses, label, 
     #pred_tanh = torch.tanh(torch.from_numpy(preds))
     #preds = np.argmax(preds, axis = 1)
 
-    if val==True:
+    if val==True: # predictions for validation set and get the validation threshold
         f_th = 0
         f_f1 = 0
         for th in np.arange(0.2,1.0, 0.001):
@@ -561,7 +561,7 @@ def test(model, test_seq, test_mask, test_y, train_losses, valid_losses, label, 
         print ("Threshold: "+str(f_th))
         return pred_sigmoid, torch.from_numpy(preds), f_th, f_f1
             
-    else:
+    else:  # predictions for test set using the validation threhsold
         pred_class = pred_sigmoid>val_th
         print ("for testing set")
         print ("Threshold: "+str(val_th))
@@ -572,10 +572,10 @@ def test(model, test_seq, test_mask, test_y, train_losses, valid_losses, label, 
         
 def data_fold(X, Y, label, feat,train_index, test_index, sk):
     
-    if sk==1:
+    if sk==1: # for train-test split
         temp_text, test_text = X.values[train_index], X.values[test_index]
         temp_labels, test_labels = Y.values[train_index], Y.values[test_index]
-    if sk==2:
+    if sk==2: # for train-val split
         temp_text, test_text = X[train_index], X[test_index]
         temp_labels, test_labels = Y[train_index], Y[test_index]
     
@@ -585,18 +585,24 @@ def data_fold(X, Y, label, feat,train_index, test_index, sk):
 def main2(label,enc_num, run_num, batch_size, feat):
     
     out_file = open("performance/thresholds.txt", "a")
-    df0 = pd.read_csv('../data/labeled_data/labels-949-nontrunc(old).csv')
+   
+    df0 = pd.read_csv('../data/labeled_data/labels-949-nontrunc(old).csv') # read the labeled data here
     df0['ABT_FAMILY'] = df0['FAMILY'].astype(bool)
     out_file.write("========================================================================\n")
     out_file.write(label+'\n')
-    df0 = clean_tweets(df0,False, remove_duplicates=False)
-    skf = StratifiedKFold(n_splits=10)
+   
+    df0 = clean_tweets(df0,False, remove_duplicates=False) # run preprocessing
+    
+    # stratified K fold 
+    skf = StratifiedKFold(n_splits=10) 
     vec = []
-    le = preprocessing.LabelEncoder()
+   
+    le = preprocessing.LabelEncoder() 
     df0[label]=le.fit_transform(df0[label])
-    X =df0[feat]
+    X =df0[feat] 
     Y = df0[label]
     out_file.write(label+'\n')
+    #creating training - testing split from whole data
     for train_index, test_index in tqdm(skf.split(X, Y)):
         print ("incoming data")
         print (X.shape)
@@ -610,13 +616,16 @@ def main2(label,enc_num, run_num, batch_size, feat):
         out_file.write(label+'\n')
     
         out_file.write(str(test_index[0])+'\n')
+       
         skf2 = StratifiedKFold(n_splits=9)
         f_save_path = ""
         f_val_f1 = 0
-            
+       
+         #creating training -validation split from training data 
         for train_index2, test_index2 in skf2.split(temp_text, temp_labels): 
             
             print (test_index[0])
+            # checking if this split is already done.
             if os.path.exists('performance/abt_fam_val/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv'):
                 print ("PATH EXISTS")
                 continue
@@ -631,10 +640,10 @@ def main2(label,enc_num, run_num, batch_size, feat):
             print (np.unique(train_labels, return_counts=True))
             print (np.unique(val_labels, return_counts=True))
             
-            #bert,train_dataloader, val_dataloader, test_seq, test_mask,test_y, train_labels, df  = get_data(label, 'split_type', df0, train_text, train_labels, val_text, val_labels, test_text, test_labels, batch_size, feat)
-            
+            # calling get_data to create dataloaders with input understable to model
             bert,train_dataloader, val_dataloader, test_seq, test_mask,test_y, val_seq, val_mask, val_y, train_labels, df  = get_data(label, 'split_type', df0, train_text, train_labels, val_text, val_labels, test_text, test_labels, batch_size, feat)
-            
+
+            #defining model save_path depending on the classifier
             if label =='AUTHOR_OR':
                 save_path ='performance/saved_wts/author'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.pt'
             if label =='FAMILY_OR':
@@ -642,14 +651,17 @@ def main2(label,enc_num, run_num, batch_size, feat):
             if label =='ABT_FAMILY':
                 save_path ='performance/saved_wts/abt_fam'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.pt'
 
-            
+            # run the BERT model
             model, train_losses, valid_losses, epch, lr = run(bert, label, train_dataloader, val_dataloader, train_labels, enc_num, save_path)
-            
+
+            # test model on the val set, save the validation thresholds for later
             val_preds_sig, val_preds, val_th, val_f1 = test(model, val_seq, val_mask, val_y, train_losses, valid_losses,label, df, epch, lr,batch_size, enc_num, train_index,test_index,  train_index2, test_index2, val =True, val_th = 0 )
             
             df_val = pd.DataFrame(df.values[test_index2],columns =df.columns)
             df_val['Sig_Predictions'] = val_preds_sig
             df_val['Predictions'] = val_preds
+           
+            # saving the predictions of model on the validation sets 
             if label =='AUTHOR_OR': 
                 df_val.to_csv('performance/author_val/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
             if label =='FAMILY_OR':
@@ -657,12 +669,15 @@ def main2(label,enc_num, run_num, batch_size, feat):
             if label =='ABT_FAMILY':
                 df_val.to_csv('performance/abt_fam_val/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
          
+            # test model on the test set, save the test thresholds for later
+            test_preds_sig, test_preds, test_th, test_f1 = test(model, test_seq, test_mask, test_y, train_losses, valid_losses,label, df, epch, lr,batch_size, enc_num, train_index,test_index,  train_index2, test_index2,  val =False, val_th =val_th  ) #, temper
 
-            test_preds_sig, test_preds, test_th, test_f1 = test(model, test_seq, test_mask, test_y, train_losses, valid_losses,label, df, epch, lr,batch_size, enc_num, train_index,test_index,  train_index2, test_index2,  val =False, val_th =val_th  ) #, tempr
-
+            # saving the predictions of model on the test sets  
             df_temp = pd.DataFrame(df.values[test_index],columns =df.columns)
             df_temp['Predictions'] = test_preds
             df_temp['Sig_Predictions'] = test_preds_sig
+           
+           # saving the predictions of model on the test sets 
             if label =='AUTHOR_OR': 
                 df_temp.to_csv('performance/author_test/preds_'+str(test_index[0])+'_'+str(train_index2[0])+'_'+str(test_index2[0])+'.csv', index =None)
             if label =='FAMILY_OR':
@@ -698,14 +713,14 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     print (args)
     label = args[0]
-    enc_num = int(args[1])
-    run_num = int(args[2])
+    enc_num = int(args[1]) # number of layers to fine-tune
+    run_num = int(args[2]) # number of repetitions of whole code
     batch_size = 32
     #label = 'FAMILY_OR'
     feat = 'TWEET_TEXT_PROCESSED'
     
-    #main(label,enc_num, run_num, batch_size, feat)
-    main2(label,enc_num, run_num, batch_size, feat)
+    #main(label,enc_num, run_num, batch_size, feat) #just for testing a model
+    main2(label,enc_num, run_num, batch_size, feat) # for training and cross-validation
     
         
         
