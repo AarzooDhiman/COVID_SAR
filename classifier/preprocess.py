@@ -112,7 +112,7 @@ covid_restrictive_regex = [
 
 restrictive_pattern = "|".join(covid_restrictive_regex)
 
-
+#method to expand contractions
 def contract(tweet):
     new_tweet = []
     for t in tweet.split():
@@ -123,6 +123,7 @@ def contract(tweet):
             new_tweet.append(t)
     return (" ".join(new_tweet))
 
+#method for tweet cleaning
 def regex_clean(df):
     temp = df.copy()
     #Remove contractions
