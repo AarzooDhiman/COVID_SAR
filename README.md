@@ -1,6 +1,6 @@
 # COVID SAR
 
-The codes provided in this repository are part of a project that focuses on estimating Secondary Attack Rate (SAR) from the Twitter data related to the COVID-19 pandemic. The aim of this project is to develop a classification model that accurately identifies tweets related to COVID-19 and classifies them based on whether the author of the tweet, or someone in their household, has been infected with the virus. The classification model is trained using the Covid-Twitter-BERT (CT-BERT) model. The resulting model is then utilized to generate prediction scores for all tweets in the dataset. These prediction scores are then used to estimate the monthly SAR scores, which provides a measure of the prevalence of COVID-19 infections within a population.
+The codes provided in this repository are part of a project that focuses on estimating Secondary Attack Rate (SAR) from the Twitter data related to the COVID-19 pandemic. The aim of this project is to develop a classification model that accurately identifies tweets related to COVID-19 and classifies them based on whether the author of the tweet, or someone in their household, has been infected with the virus. The classification model is trained using the Covid-Twitter-BERT (CT-BERT) model. The resulting model is then utilized to generate prediction scores for all tweets in the dataset. These prediction scores are then used to estimate the monthly SAR scores for COVID-19.
 
 ## Labeled data
 
