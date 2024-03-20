@@ -7,6 +7,6 @@ def read_pickle1(pth):
     return (data)
 
 
-df = read_pickle1('/disks/sdb/adhiman/SAR_data/data/user_timelines/276945706.pkl')
+df = read_pickle1('data/user_timelines/276945706.pkl')
 
 print (df.head())
